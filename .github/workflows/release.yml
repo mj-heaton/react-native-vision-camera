@@ -12,30 +12,31 @@ permissions:
 concurrency:
   group: visioncamera-release-${{ github.ref }}
   cancel-in-progress: false
-
+  
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
-      - name: Use Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          # no cache here because there is no root lockfile
+          cache: npm
+          cache-dependency-path: package/package-lock.json  # optional, if you commit it
 
-      # Install only the package workspace (no root lockfile required)
+      # 🔐 Install only the package/ workspace, ignore monorepo workspaces like docs/
       - name: Install deps (package/)
         working-directory: package
-        run: npm install
+        env:
+          NPM_CONFIG_WORKSPACES: "false"
+        run: npm ci || npm install  # ci if lockfile exists, fallback to install
 
       - name: Build package
         working-directory: package
+        env:
+          NPM_CONFIG_WORKSPACES: "false"
         run: npm run build
 
       - name: Verify plugin output exists
@@ -46,6 +47,8 @@ jobs:
 
       - name: Pack tarball
         working-directory: package
+        env:
+          NPM_CONFIG_WORKSPACES: "false"
         run: |
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VERSION=$(node -p "require('./package.json').version")
