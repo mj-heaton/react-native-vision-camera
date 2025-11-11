@@ -60,6 +60,7 @@ target_link_libraries(
         ${LOG_LIB}                          # <-- Logcat logger
         android                             # <-- Android JNI core
         ReactAndroid::jsi                   # <-- RN: JSI
+        ReactAndroid::callinvoker           # <-- RN: CallInvoker
         fbjni::fbjni                        # <-- fbjni
 )
 
