@@ -32,7 +32,7 @@ enum PortraitNormalizer {
     guard let cgImage = image.cgImage else {
       throw CameraError.capture(.imageDataAccessError)
     }
-    guard let destination = CGImageDestinationCreateWithURL(url as CFURL, AVFileType.jpeg as CFString, 1, nil) else {
+    guard let destination = CGImageDestinationCreateWithURL(url as CFURL, AVFileType.jpg as CFString, 1, nil) else {
       throw CameraError.capture(.imageDataAccessError)
     }
 
