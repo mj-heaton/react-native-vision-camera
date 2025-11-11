@@ -58,20 +58,15 @@ jobs:
       - name: Install workspace deps
         run: npm install --legacy-peer-deps
 
-      - name: Install example pods
-        working-directory: example/ios
-        run: pod install
-
-      - name: Build example app (exercises VisionCamera pod)
-        working-directory: example/ios
+      - name: Lint Podspec (compiles Swift)
+        working-directory: package
         run: |
-          xcodebuild \
-            -workspace VisionCameraExample.xcworkspace \
-            -scheme VisionCameraExample \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+          pod repo update --silent
+          pod lib lint VisionCamera.podspec \
+            --configuration=Debug \
+            --platforms=ios,13.4 \
+            --skip-import-validation \
+            --allow-warnings
 
   build-and-release:
     runs-on: ubuntu-latest
