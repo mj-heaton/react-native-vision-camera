@@ -10,17 +10,11 @@ permissions:
   contents: write
 
 jobs:
-  android-check:
+  android-example:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -28,58 +22,184 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: oven-sh/setup-bun@v2
 
       - name: Install workspace deps
-        run: npm install --legacy-peer-deps
+        run: bun install
 
-      - name: Build Android artifacts
-        working-directory: package/android
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-with-fps-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-with-fps-gradle-
+
+      - name: Build Android example (debug + release)
         run: |
-          chmod +x ./gradlew
-          ./gradlew assembleRelease --stacktrace
+          cd example/android
+          ./gradlew assembleDebug --no-daemon --build-cache
+          ./gradlew assembleRelease --no-daemon --build-cache
 
-  ios-check:
+      - name: Stop Gradle Daemon
+        run: cd example/android && ./gradlew --stop
+
+  android-example-no-frame-processors:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install workspace deps
+        run: bun install
+
+      - name: Remove optional Frame Processor deps
+        run: |
+          bun remove react-native-worklets-core @shopify/react-native-skia react-native-reanimated --cwd example
+          bun remove react-native-worklets-core @shopify/react-native-skia react-native-reanimated
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-without-fps-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-without-fps-gradle-
+
+      - name: Build Android example without Frame Processors
+        run: |
+          cd example/android
+          ./gradlew assembleDebug --no-daemon --build-cache
+
+      - name: Stop Gradle Daemon
+        run: cd example/android && ./gradlew --stop
+
+  ios-example:
     runs-on: macos-latest
     env:
       REANIMATED_DISABLE_VERSION_CHECK: "1"
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install CocoaPods
-        run: sudo gem install cocoapods
+      - uses: oven-sh/setup-bun@v2
 
       - name: Install workspace deps
-        run: npm install --legacy-peer-deps
+        run: bun install
 
-      - name: Install example pods
+      - name: Restore buildcache
+        uses: mikehardy/buildcache-action@v2
+        continue-on-error: true
+
+      - name: Setup Ruby (bundle)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7.2
+          bundler-cache: true
+          working-directory: example/ios
+
+      - name: Restore Pods cache
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-with-fps-pods-${{ hashFiles('example/ios/Podfile.lock', 'example/ios/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-with-fps-pods-
+
+      - name: Install Pods
         working-directory: example/ios
         run: pod install
 
-      - name: Build example app (exercises VisionCamera pod)
+      - name: Install xcpretty
+        run: gem install xcpretty
+
+      - name: Build iOS example app
         working-directory: example/ios
         run: |
-          xcodebuild \
+          set -o pipefail && xcodebuild \
+            CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ \
+            -derivedDataPath build -UseModernBuildSystem=YES \
             -workspace VisionCameraExample.xcworkspace \
             -scheme VisionCameraExample \
             -sdk iphonesimulator \
             -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            build \
+            CODE_SIGNING_ALLOWED=NO | xcpretty
+
+  ios-example-no-frame-processors:
+    runs-on: macos-latest
+    env:
+      REANIMATED_DISABLE_VERSION_CHECK: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install workspace deps
+        run: bun install
+
+      - name: Remove optional Frame Processor deps
+        run: |
+          bun remove react-native-worklets-core @shopify/react-native-skia react-native-reanimated --cwd example
+          bun remove react-native-worklets-core @shopify/react-native-skia react-native-reanimated --cwd package
+
+      - name: Restore buildcache
+        uses: mikehardy/buildcache-action@v2
+        continue-on-error: true
+
+      - name: Setup Ruby (bundle)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7.2
+          bundler-cache: true
+          working-directory: example/ios
+
+      - name: Restore Pods cache
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-without-fps-pods-${{ hashFiles('example/ios/Podfile.lock', 'example/ios/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-without-fps-pods-
+
+      - name: Install Pods
+        working-directory: example/ios
+        run: pod install
+
+      - name: Install xcpretty
+        run: gem install xcpretty
+
+      - name: Build iOS example app without Frame Processors
+        working-directory: example/ios
+        run: |
+          set -o pipefail && xcodebuild \
+            CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ \
+            -derivedDataPath build -UseModernBuildSystem=YES \
+            -workspace VisionCameraExample.xcworkspace \
+            -scheme VisionCameraExample \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            build \
+            CODE_SIGNING_ALLOWED=NO | xcpretty
 
   build-and-release:
     runs-on: ubuntu-latest
     needs:
-      - android-check
-      - ios-check
+      - android-example
+      - android-example-no-frame-processors
+      - ios-example
+      - ios-example-no-frame-processors
 
     steps:
       - name: Checkout
