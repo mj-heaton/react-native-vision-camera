@@ -24,12 +24,11 @@ jobs:
         with:
           node-version: 20
 
-      # ---- isolate the package so npm doesn't see the monorepo workspaces ----
+      # ---- Isolate the package so npm doesn't see other workspaces (docs/) ----
       - name: Prepare isolated build dir
         run: |
           rm -rf buildpkg
           mkdir -p buildpkg
-          # copy package/* including dotfiles, but not node_modules
           rsync -a package/ buildpkg/ --exclude node_modules --exclude dist --exclude lib
 
       - name: Install deps (isolated)
@@ -52,41 +51,48 @@ jobs:
             (echo "❌ Missing compiled plugin at lib/commonjs/expo-plugin/withVisionCamera.js" && exit 1)
 
       - name: Pack tarball (ignore pre/postpack scripts)
+        id: pack
         working-directory: buildpkg
         run: |
           PKG_NAME=$(node -p "require('./package.json').name")
           PKG_VERSION=$(node -p "require('./package.json').version")
           echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
           echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
-          # avoid monorepo prepack script that copies ../README.md
           TARBALL=$(npm pack --silent --ignore-scripts)
           echo "TARBALL=$TARBALL" >> $GITHUB_ENV
           mv "$TARBALL" "../react-native-vision-camera-${PKG_VERSION}.tgz"
 
-      - name: Generate checksum
+      - name: Generate checksum + verify files
         run: |
-          echo "ASSET_NAME=react-native-vision-camera-${PKG_VERSION}.tgz" >> $GITHUB_ENV
+          ASSET_NAME="react-native-vision-camera-${PKG_VERSION}.tgz"
+          echo "ASSET_NAME=$ASSET_NAME" >> $GITHUB_ENV
+          test -f "$ASSET_NAME" || (echo "❌ Missing $ASSET_NAME" && ls -la && exit 1)
           shasum -a 256 "$ASSET_NAME" > "${ASSET_NAME}.sha256"
+          echo "Will upload:"
+          ls -lh "$ASSET_NAME" "${ASSET_NAME}.sha256"
 
-      # ---- Tagged release (vX.Y.Z) ----
+      # ---------- Tagged release (vX.Y.Z) ----------
       - name: Create GitHub Release for tag
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         env:
+          GH_TOKEN: ${{ github.token }}
           ASSET_NAME: ${{ env.ASSET_NAME }}
         with:
           draft: false
           prerelease: false
           generate_release_notes: true
+          overwrite: true                 # <— allow re-runs to replace assets
           files: |
             ${{ env.ASSET_NAME }}
             ${{ env.ASSET_NAME }}.sha256
 
-      # ---- Rolling prerelease for main ----
+      # ---------- Rolling prerelease for main ----------
       - name: Create/Update prerelease for main
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         env:
+          GH_TOKEN: ${{ github.token }}
           ASSET_NAME: ${{ env.ASSET_NAME }}
         with:
           tag_name: latest-main
@@ -94,6 +100,7 @@ jobs:
           draft: false
           prerelease: true
           generate_release_notes: false
+          overwrite: true                 # <— update assets on every push to main
           files: |
             ${{ env.ASSET_NAME }}
             ${{ env.ASSET_NAME }}.sha256
