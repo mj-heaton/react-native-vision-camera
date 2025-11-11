@@ -39,19 +39,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Xcode version
-        run: xcodebuild -version
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
 
-      - name: Build iOS framework
-        working-directory: package/ios
+      - name: Lint Podspec (compiles Swift)
+        working-directory: package
         run: |
-          xcodebuild \
-            -project VisionCamera.xcodeproj \
-            -scheme VisionCamera \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+          pod repo update --silent
+          pod lib lint VisionCamera.podspec \
+            --configuration=Debug \
+            --skip-import-validation \
+            --allow-warnings
 
   build-and-release:
     runs-on: ubuntu-latest
