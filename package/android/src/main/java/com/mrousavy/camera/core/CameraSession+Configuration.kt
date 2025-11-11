@@ -1,8 +1,10 @@
 package com.mrousavy.camera.core
 
 import android.annotation.SuppressLint
+import android.hardware.camera2.CaptureRequest
 import android.util.Log
 import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.CameraState
 import androidx.camera.core.DynamicRange
@@ -23,7 +25,10 @@ import com.mrousavy.camera.core.types.CameraDeviceFormat
 import com.mrousavy.camera.core.types.Torch
 import com.mrousavy.camera.core.types.VideoStabilizationMode
 import com.mrousavy.camera.core.utils.CamcorderProfileUtils
+import com.mrousavy.camera.core.utils.clampToMegapixels
 import kotlin.math.roundToInt
+
+private const val MAX_PHOTO_PIXELS = 23_000_000L
 
 private fun assertFormatRequirement(
   propName: String,
@@ -94,17 +99,29 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration) 
   // 2. Image Capture
   if (photoConfig != null) {
     Log.i(CameraSession.TAG, "Creating Photo output...")
-    val photo = ImageCapture.Builder().also { photo ->
+    val photo = ImageCapture.Builder().also { builder ->
       // Configure Photo Output
-      photo.setCaptureMode(photoConfig.config.photoQualityBalance.toCaptureMode())
-      photo.setJpegQuality(photoConfig.config.photoQualityBalance.toJpegQuality())
+      builder.setCaptureMode(photoConfig.config.photoQualityBalance.toCaptureMode())
+      builder.setJpegQuality(photoConfig.config.photoQualityBalance.toJpegQuality())
+
+      // Hint camera2 to keep compression artifacts low
+      val camera2Extender = Camera2Interop.Extender(builder)
+      camera2Extender.setCaptureRequestOption(CaptureRequest.JPEG_QUALITY, 100.toByte())
+      camera2Extender.setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_OFF)
+      camera2Extender.setCaptureRequestOption(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_OFF)
+
       if (format != null) {
-        Log.i(CameraSession.TAG, "Photo size: ${format.photoSize}")
+        val targetSize = format.photoSize.clampToMegapixels(MAX_PHOTO_PIXELS)
+        if (targetSize != format.photoSize) {
+          Log.i(CameraSession.TAG, "Clamping photo size from ${format.photoSize} to $targetSize to honor 23 MP cap.")
+        } else {
+          Log.i(CameraSession.TAG, "Photo size: ${format.photoSize}")
+        }
         val resolutionSelector = ResolutionSelector.Builder()
-          .forSize(format.photoSize)
+          .forSize(targetSize)
           .setAllowedResolutionMode(ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE)
           .build()
-        photo.setResolutionSelector(resolutionSelector)
+        builder.setResolutionSelector(resolutionSelector)
       }
     }.build()
     photoOutput = photo
