@@ -97,6 +97,7 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration) 
     val photo = ImageCapture.Builder().also { photo ->
       // Configure Photo Output
       photo.setCaptureMode(photoConfig.config.photoQualityBalance.toCaptureMode())
+      photo.setJpegQuality(photoConfig.config.photoQualityBalance.toJpegQuality())
       if (format != null) {
         Log.i(CameraSession.TAG, "Photo size: ${format.photoSize}")
         val resolutionSelector = ResolutionSelector.Builder()

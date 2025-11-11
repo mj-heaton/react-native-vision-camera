@@ -55,6 +55,14 @@ export interface PhotoFile extends TemporaryFile {
    */
   height: number
   /**
+   * Horizontal field of view (in degrees) that was active for this capture.
+   */
+  horizontalFieldOfView: number
+  /**
+   * Vertical field of view (in degrees) that was active for this capture.
+   */
+  verticalFieldOfView: number
+  /**
    * Whether this photo is in RAW format or not.
    */
   isRawPhoto: boolean

@@ -7,6 +7,8 @@
 //
 
 import AVFoundation
+import CoreMedia
+import ImageIO
 
 // MARK: - PhotoCaptureDelegate
 
@@ -16,17 +18,20 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
   private let cameraSessionDelegate: CameraSessionDelegate?
   private let metadataProvider: MetadataProvider
   private let path: URL
+  private let videoDevice: AVCaptureDevice
 
   required init(promise: Promise,
                 enableShutterSound: Bool,
                 metadataProvider: MetadataProvider,
                 path: URL,
-                cameraSessionDelegate: CameraSessionDelegate?) {
+                cameraSessionDelegate: CameraSessionDelegate?,
+                videoDevice: AVCaptureDevice) {
     self.promise = promise
     self.enableShutterSound = enableShutterSound
     self.metadataProvider = metadataProvider
     self.path = path
     self.cameraSessionDelegate = cameraSessionDelegate
+    self.videoDevice = videoDevice
     super.init()
     makeGlobal()
   }
@@ -55,9 +60,15 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
                                      metadataProvider: metadataProvider,
                                      file: path)
 
+      let portraitSize = try PortraitNormalizer.enforcePortrait(at: path, metadata: photo.metadata)
+      var metadata = photo.metadata
+      metadata[kCGImagePropertyOrientation as String] = nil
+
+      let fieldOfView = computeFieldOfView()
+
       let exif = photo.metadata["{Exif}"] as? [String: Any]
-      let width = exif?["PixelXDimension"]
-      let height = exif?["PixelYDimension"]
+      let width = Int(portraitSize.width)
+      let height = Int(portraitSize.height)
       let exifOrientation = photo.metadata[String(kCGImagePropertyOrientation)] as? UInt32 ?? CGImagePropertyOrientation.up.rawValue
       let cgOrientation = CGImagePropertyOrientation(rawValue: exifOrientation) ?? CGImagePropertyOrientation.up
       let orientation = getOrientation(forExifOrientation: cgOrientation)
@@ -70,8 +81,10 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
         "orientation": orientation,
         "isMirrored": isMirrored,
         "isRawPhoto": photo.isRawPhoto,
-        "metadata": photo.metadata,
+        "metadata": metadata,
         "thumbnail": photo.embeddedThumbnailPhotoFormat as Any,
+        "horizontalFieldOfView": fieldOfView.horizontal,
+        "verticalFieldOfView": fieldOfView.vertical,
       ])
     } catch let error as CameraError {
       promise.reject(error: error)
@@ -116,5 +129,22 @@ class PhotoCaptureDelegate: GlobalReferenceHolder, AVCapturePhotoCaptureDelegate
     default:
       return false
     }
+  }
+
+  private func computeFieldOfView() -> (horizontal: Double, vertical: Double) {
+    let format = videoDevice.activeFormat
+    var horizontal = Double(format.videoFieldOfView)
+    let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+    let aspectRatio = dimensions.width > 0 ? Double(dimensions.height) / Double(dimensions.width) : 0.75
+    var vertical = horizontal * aspectRatio
+
+    if horizontal > 90.0 {
+      let divisor = sqrt(2.0)
+      horizontal /= divisor
+      vertical /= divisor
+    }
+
+    VisionLogger.log(level: .info, message: "Computed FOV: \(horizontal)° x \(vertical)°")
+    return (horizontal, vertical)
   }
 }

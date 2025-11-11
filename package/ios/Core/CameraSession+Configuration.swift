@@ -320,11 +320,24 @@ extension CameraSession {
    Configures zoom (`zoom`)
    */
   func configureZoom(configuration: CameraConfiguration, device: AVCaptureDevice) {
-    guard let zoom = configuration.zoom else {
+    var targetZoom = configuration.zoom
+    let neutralZoom = Double(device.neutralZoomFactor)
+
+    if targetZoom == nil {
+      targetZoom = neutralZoom
+    }
+
+    guard var zoom = targetZoom else {
       return
     }
 
-    let clamped = max(min(zoom, device.activeFormat.videoMaxZoomFactor), device.minAvailableVideoZoomFactor)
+    if neutralZoom > 1.0 && zoom < neutralZoom {
+      VisionLogger.log(level: .info, message: "Clamping zoom \(zoom) -> \(neutralZoom) to maintain wide FOV.")
+      zoom = neutralZoom
+    }
+
+    let clampedValue = CGFloat(zoom)
+    let clamped = max(min(clampedValue, device.activeFormat.videoMaxZoomFactor), device.minAvailableVideoZoomFactor)
     device.videoZoomFactor = clamped
   }
 

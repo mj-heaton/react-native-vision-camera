@@ -39,6 +39,7 @@ import kotlin.math.sqrt
 class CameraDeviceDetails(private val cameraInfo: CameraInfo, extensionsManager: ExtensionsManager) {
   companion object {
     private const val TAG = "CameraDeviceDetails"
+    private const val MAX_PHOTO_PIXELS = 23_000_000L
   }
 
   // Generic props available on all implementations
@@ -138,6 +139,11 @@ class CameraDeviceDetails(private val cameraInfo: CameraInfo, extensionsManager:
             val fpsRange = Range(minFpsForSize, maxFpsForSize)
 
             photoSizes.forEach { photoSize ->
+              val pixelCount = photoSize.width.toLong() * photoSize.height.toLong()
+              if (pixelCount > MAX_PHOTO_PIXELS) {
+                Log.i(TAG, "Skipping photo size ${photoSize.width}x${photoSize.height} (> ${MAX_PHOTO_PIXELS} px)")
+                return@forEach
+              }
               try {
                 val map = buildFormatMap(photoSize, videoSize, fpsRange)
                 array.pushMap(map)

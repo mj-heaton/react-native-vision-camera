@@ -27,6 +27,8 @@ suspend fun CameraView.takePhoto(optionsMap: ReadableMap): WritableMap {
   map.putString("orientation", photo.orientation.unionValue)
   map.putBoolean("isRawPhoto", false)
   map.putBoolean("isMirrored", photo.isMirrored)
+  map.putDouble("horizontalFieldOfView", photo.horizontalFieldOfView)
+  map.putDouble("verticalFieldOfView", photo.verticalFieldOfView)
 
   return map
 }

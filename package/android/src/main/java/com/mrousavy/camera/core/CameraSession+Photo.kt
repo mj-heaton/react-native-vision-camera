@@ -1,11 +1,14 @@
 package com.mrousavy.camera.core
 
 import android.media.AudioManager
+import android.util.Log
 import com.mrousavy.camera.core.extensions.takePicture
 import com.mrousavy.camera.core.types.Flash
 import com.mrousavy.camera.core.types.Orientation
 import com.mrousavy.camera.core.types.TakePhotoOptions
 import com.mrousavy.camera.core.utils.FileUtils
+import com.mrousavy.camera.core.utils.PortraitProcessor
+import com.mrousavy.camera.core.utils.computeFieldOfViewDegrees
 
 suspend fun CameraSession.takePhoto(options: TakePhotoOptions): Photo {
   val camera = camera ?: throw CameraNotReadyError()
@@ -33,12 +36,17 @@ suspend fun CameraSession.takePhoto(options: TakePhotoOptions): Photo {
     CameraQueues.cameraExecutor
   )
 
-  // Parse resulting photo (EXIF data)
-  val size = FileUtils.getImageSize(photoFile.uri.path)
+  val path = photoFile.uri.path ?: throw InvalidPathError("photo-path-null")
+  val portraitResult = PortraitProcessor.enforcePortrait(path)
+  val width = portraitResult.width
+  val height = portraitResult.height
   val rotation = photoOutput.targetRotation
   val orientation = Orientation.fromSurfaceRotation(rotation)
+  val fieldOfView = computeFieldOfViewDegrees()
 
-  return Photo(photoFile.uri.path, size.width, size.height, orientation, isMirrored)
+  Log.i(CameraSession.TAG, "Photo ready at $path -> ${width}x$height, FOV h=${fieldOfView.horizontal}°, v=${fieldOfView.vertical}°")
+
+  return Photo(path, width, height, orientation, isMirrored, fieldOfView.horizontal, fieldOfView.vertical)
 }
 
 private val AudioManager.isSilent: Boolean

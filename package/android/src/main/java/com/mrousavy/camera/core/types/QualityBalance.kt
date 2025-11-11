@@ -17,6 +17,13 @@ enum class QualityBalance(override val unionValue: String) : JSUnionValue {
       QUALITY -> ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
     }
 
+  fun toJpegQuality(): Int =
+    when (this) {
+      SPEED -> 85
+      BALANCED -> 94
+      QUALITY -> 100
+    }
+
   companion object : JSUnionValue.Companion<QualityBalance> {
     override fun fromUnionValue(unionValue: String?): QualityBalance =
       when (unionValue) {

@@ -84,7 +84,8 @@ extension CameraSession {
                                                       enableShutterSound: options.enableShutterSound,
                                                       metadataProvider: self.metadataProvider,
                                                       path: options.path,
-                                                      cameraSessionDelegate: self.delegate)
+                                                      cameraSessionDelegate: self.delegate,
+                                                      videoDevice: videoDeviceInput.device)
       photoOutput.capturePhoto(with: photoSettings, delegate: photoCaptureDelegate)
 
       // Assume that `takePhoto` is always called with the same parameters, so prepare the next call too.

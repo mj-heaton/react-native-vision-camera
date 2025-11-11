@@ -8,9 +8,21 @@
 
 import AVFoundation
 
+private let kMaxPhotoPixels: Int64 = 23_000_000
+
 extension AVCaptureDevice {
   func toDictionary() -> [String: Any] {
-    let formats = formats.map { CameraDeviceFormat(fromFormat: $0) }
+    let formats = formats
+      .map { CameraDeviceFormat(fromFormat: $0) }
+      .filter { format in
+        let pixelCount = Int64(format.photoWidth) * Int64(format.photoHeight)
+        if pixelCount > kMaxPhotoPixels {
+          VisionLogger.log(level: .info,
+                           message: "Skipping format \(format.photoWidth)x\(format.photoHeight) (> \(kMaxPhotoPixels) px)")
+          return false
+        }
+        return true
+      }
 
     return [
       "id": uniqueID,
