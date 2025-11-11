@@ -1,0 +1,93 @@
+name: Build & Release VisionCamera Fork
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - "v*.*.*"     # tag like v4.7.2
+
+permissions:
+  contents: write     # needed to create releases & upload assets
+
+concurrency:
+  group: visioncamera-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Install workspace deps (npm workspaces)
+      - name: Install deps (workspace root)
+        run: npm ci
+
+      # Build ONLY the VisionCamera package
+      - name: Build package
+        run: npm run build -w package
+
+      # Verify the Expo config plugin output exists in the build
+      - name: Verify plugin output exists
+        run: |
+          test -f package/app.plugin.js || (echo "Missing package/app.plugin.js" && exit 1)
+          test -f package/lib/commonjs/expo-plugin/withVisionCamera.js || \
+            (echo "❌ Missing compiled plugin at package/lib/commonjs/expo-plugin/withVisionCamera.js" && exit 1)
+
+      # Pack just the "package/" workspace
+      - name: Pack tarball
+        id: pack
+        run: |
+          PKG_NAME=$(node -p "require('./package/package.json').name")
+          PKG_VERSION=$(node -p "require('./package/package.json').version")
+          echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
+          echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
+          cd package
+          TARBALL=$(npm pack --silent)
+          echo "TARBALL=$TARBALL" >> $GITHUB_ENV
+          mv "$TARBALL" "../react-native-vision-camera-${PKG_VERSION}.tgz"
+
+      - name: Generate checksum
+        run: |
+          echo "ASSET_NAME=react-native-vision-camera-${PKG_VERSION}.tgz" >> $GITHUB_ENV
+          shasum -a 256 "$ASSET_NAME" > "${ASSET_NAME}.sha256"
+
+      # ----- Tagged release (vX.Y.Z) -----
+      - name: Create GitHub Release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        env:
+          ASSET_NAME: ${{ env.ASSET_NAME }}
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ${{ env.ASSET_NAME }}
+            ${{ env.ASSET_NAME }}.sha256
+
+      # ----- Rolling prerelease for main -----
+      - name: Create/Update prerelease for main
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        env:
+          ASSET_NAME: ${{ env.ASSET_NAME }}
+        with:
+          tag_name: latest-main
+          name: Latest main
+          draft: false
+          prerelease: true
+          generate_release_notes: false
+          files: |
+            ${{ env.ASSET_NAME }}
+            ${{ env.ASSET_NAME }}.sha256
