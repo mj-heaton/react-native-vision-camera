@@ -64,7 +64,7 @@ jobs:
           pod repo update --silent
           pod lib lint VisionCamera.podspec \
             --configuration=Debug \
-            --platforms=ios,13.4 \
+            --platforms=ios \
             --skip-import-validation \
             --allow-warnings
 
