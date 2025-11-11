@@ -60,9 +60,15 @@ target_link_libraries(
         ${LOG_LIB}                          # <-- Logcat logger
         android                             # <-- Android JNI core
         ReactAndroid::jsi                   # <-- RN: JSI
-        ReactAndroid::callinvoker           # <-- RN: CallInvoker
         fbjni::fbjni                        # <-- fbjni
 )
+
+if(TARGET ReactAndroid::callinvoker)
+    target_link_libraries(
+            ${PACKAGE_NAME}
+            ReactAndroid::callinvoker           # <-- RN: CallInvoker (RN 0.83+ prefab)
+    )
+endif()
 
 # Link react-native (different prefab between RN 0.75 and RN 0.76)
 if(ReactAndroid_VERSION_MINOR GREATER_EQUAL 76)

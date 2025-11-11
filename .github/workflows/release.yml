@@ -42,6 +42,8 @@ jobs:
 
   ios-check:
     runs-on: macos-latest
+    env:
+      REANIMATED_DISABLE_VERSION_CHECK: "1"
 
     steps:
       - name: Checkout
@@ -60,8 +62,6 @@ jobs:
 
       - name: Install example pods
         working-directory: example/ios
-        env:
-          REANIMATED_DISABLE_VERSION_CHECK: "1"
         run: pod install
 
       - name: Build example app (exercises VisionCamera pod)
