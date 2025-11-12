@@ -107,7 +107,7 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration) 
       // Hint camera2 to keep compression artifacts low
       val camera2Extender = Camera2Interop.Extender(builder)
       camera2Extender.setCaptureRequestOption(CaptureRequest.JPEG_QUALITY, 90.toByte())
-      camera2Extender.setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_OFF)
+      camera2Extender.setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST)
       camera2Extender.setCaptureRequestOption(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_HIGH_QUALITY)
       camera2Extender.setCaptureRequestOption(CaptureRequest.DISTORTION_CORRECTION_MODE, CaptureRequest.DISTORTION_CORRECTION_MODE_HIGH_QUALITY)
 
