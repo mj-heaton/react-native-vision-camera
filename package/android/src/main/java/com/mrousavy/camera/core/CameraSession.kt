@@ -137,16 +137,26 @@ class CameraSession(internal val context: Context, internal val callback: Callba
       Log.i(TAG, "configure { ... }: Updating CameraSession Configuration... $diff")
 
       try {
+        val needsCameraInput = diff.outputsChanged || diff.deviceChanged
+        val resolvedCameraId = if (needsCameraInput) {
+          val requestedCameraId = config.cameraId ?: throw NoCameraDeviceError()
+          provider.resolveCameraId(requestedCameraId)
+        } else {
+          null
+        }
+
         // Build up session or update any props
         if (diff.outputsChanged) {
           // 1. outputs changed, re-create them
-          configureOutputs(config)
+          val cameraId = resolvedCameraId ?: throw NoCameraDeviceError()
+          configureOutputs(config, cameraId)
           // 1.1. whenever the outputs changed, we need to update their orientation as well
           configureOrientation()
         }
         if (diff.deviceChanged) {
           // 2. input or outputs changed, or the session was destroyed from outside, rebind the session
-          configureCamera(provider, config)
+          val cameraId = resolvedCameraId ?: throw NoCameraDeviceError()
+          configureCamera(provider, config, cameraId)
         }
         if (diff.sidePropsChanged) {
           // 3. side props such as zoom, exposure or torch changed.

@@ -49,8 +49,7 @@ private fun assertFormatRequirement(
 @OptIn(ExperimentalGetImage::class)
 @SuppressLint("RestrictedApi")
 @Suppress("LiftReturnOrAssignment")
-internal fun CameraSession.configureOutputs(configuration: CameraConfiguration) {
-  val cameraId = configuration.cameraId!!
+internal fun CameraSession.configureOutputs(configuration: CameraConfiguration, cameraId: String) {
   Log.i(CameraSession.TAG, "Creating new Outputs for Camera #$cameraId...")
   val fpsRange = configuration.targetFpsRange
   val format = configuration.format
@@ -246,12 +245,16 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration) 
   } else {
     codeScannerOutput = null
   }
-  Log.i(CameraSession.TAG, "Successfully created new Outputs for Camera #${configuration.cameraId}!")
+  Log.i(CameraSession.TAG, "Successfully created new Outputs for Camera #$cameraId!")
 }
 
 @SuppressLint("RestrictedApi")
-internal suspend fun CameraSession.configureCamera(provider: ProcessCameraProvider, configuration: CameraConfiguration) {
-  Log.i(CameraSession.TAG, "Binding Camera #${configuration.cameraId}...")
+internal suspend fun CameraSession.configureCamera(
+  provider: ProcessCameraProvider,
+  configuration: CameraConfiguration,
+  cameraId: String
+) {
+  Log.i(CameraSession.TAG, "Binding Camera #$cameraId...")
   checkCameraPermission()
 
   // Outputs
@@ -261,7 +264,6 @@ internal suspend fun CameraSession.configureCamera(provider: ProcessCameraProvid
   }
 
   // Input
-  val cameraId = configuration.cameraId ?: throw NoCameraDeviceError()
   var cameraSelector = CameraSelector.Builder().byId(cameraId).build()
 
   // Wrap input with a vendor extension if needed (see https://developer.android.com/media/camera/camera-extensions)
@@ -327,7 +329,7 @@ internal suspend fun CameraSession.configureCamera(provider: ProcessCameraProvid
       callback.onError(error.toCameraError())
     }
   }
-  Log.i(CameraSession.TAG, "Successfully bound Camera #${configuration.cameraId}!")
+  Log.i(CameraSession.TAG, "Successfully bound Camera #$cameraId!")
 }
 
 internal fun CameraSession.configureSideProps(config: CameraConfiguration) {
@@ -365,4 +367,31 @@ internal fun CameraSession.configureIsActive(config: CameraConfiguration) {
     lifecycleRegistry.currentState = Lifecycle.State.STARTED
     lifecycleRegistry.currentState = Lifecycle.State.CREATED
   }
+}
+
+internal fun ProcessCameraProvider.resolveCameraId(requestedCameraId: String): String {
+  val availableInfos = availableCameraInfos
+  if (availableInfos.isEmpty()) {
+    throw NoCameraDeviceError()
+  }
+
+  val availableIds = availableInfos.mapNotNull { it.id }
+  if (availableIds.contains(requestedCameraId)) {
+    return requestedCameraId
+  }
+
+  if (availableIds.size == 1) {
+    val fallbackId = availableIds.first()
+    Log.w(
+      CameraSession.TAG,
+      "Camera #$requestedCameraId is not available. Falling back to the only available camera #$fallbackId."
+    )
+    return fallbackId
+  }
+
+  if (availableIds.isEmpty()) {
+    throw NoCameraDeviceError()
+  }
+
+  throw CameraDeviceNotAvailableError(requestedCameraId, availableIds)
 }

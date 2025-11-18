@@ -53,6 +53,12 @@ class NoCameraDeviceError :
     "no-device",
     "No device was set! Use `useCameraDevice(..)` or `Camera.getAvailableCameraDevices()` to select a suitable Camera device."
   )
+class CameraDeviceNotAvailableError(cameraId: String, availableCameraIds: List<String>) :
+  CameraError(
+    "device",
+    "device-not-available",
+    "The requested Camera Device #$cameraId is not available on this phone. Available devices: ${availableCameraIds.joinToString(\", \")}."
+  )
 class PixelFormatNotSupportedError(format: String) :
   CameraError("device", "pixel-format-not-supported", "The pixelFormat $format is not supported on the given Camera Device!")
 class FlashUnavailableError :
