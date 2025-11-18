@@ -57,7 +57,9 @@ class CameraDeviceNotAvailableError(cameraId: String, availableCameraIds: List<S
   CameraError(
     "device",
     "device-not-available",
-    "The requested Camera Device #$cameraId is not available on this phone. Available devices: ${availableCameraIds.joinToString(\", \")}."
+    "The requested Camera Device #$cameraId is not available on this phone. Available devices: ${
+      availableCameraIds.joinToString(", ")
+    }."
   )
 class PixelFormatNotSupportedError(format: String) :
   CameraError("device", "pixel-format-not-supported", "The pixelFormat $format is not supported on the given Camera Device!")
