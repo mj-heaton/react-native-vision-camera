@@ -98,18 +98,9 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration, 
   // 2. Image Capture
   if (photoConfig != null) {
     Log.i(CameraSession.TAG, "Creating Photo output...")
-    val photo = ImageCapture.Builder().also { builder ->
+    val photo = ImageCapture.Builder().also { photo ->
       // Configure Photo Output
-      builder.setCaptureMode(photoConfig.config.photoQualityBalance.toCaptureMode())
-      builder.setJpegQuality(photoConfig.config.photoQualityBalance.toJpegQuality())
-
-      // Hint camera2 to keep compression artifacts low
-      val camera2Extender = Camera2Interop.Extender(builder)
-      camera2Extender.setCaptureRequestOption(CaptureRequest.JPEG_QUALITY, 90.toByte())
-      camera2Extender.setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_FAST)
-      camera2Extender.setCaptureRequestOption(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_HIGH_QUALITY)
-      camera2Extender.setCaptureRequestOption(CaptureRequest.DISTORTION_CORRECTION_MODE, CaptureRequest.DISTORTION_CORRECTION_MODE_HIGH_QUALITY)
-
+      photo.setCaptureMode(photoConfig.config.photoQualityBalance.toCaptureMode())
       if (format != null) {
         val targetSize = format.photoSize.clampToMegapixels(MAX_PHOTO_PIXELS)
         if (targetSize != format.photoSize) {
@@ -121,7 +112,8 @@ internal fun CameraSession.configureOutputs(configuration: CameraConfiguration, 
           .forSize(targetSize)
           .setAllowedResolutionMode(ResolutionSelector.PREFER_HIGHER_RESOLUTION_OVER_CAPTURE_RATE)
           .build()
-        builder.setResolutionSelector(resolutionSelector)
+        Log.i(CameraSession.TAG, "Photo size: ${format.photoSize}")
+        photo.setResolutionSelector(resolutionSelector)
       }
     }.build()
     photoOutput = photo
