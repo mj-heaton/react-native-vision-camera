@@ -164,6 +164,20 @@ open class HybridPhotoSpec_cxx {
     }
   }
   
+  public final var horizontalFieldOfView: Double {
+    @inline(__always)
+    get {
+      return self.__implementation.horizontalFieldOfView
+    }
+  }
+  
+  public final var verticalFieldOfView: Double {
+    @inline(__always)
+    get {
+      return self.__implementation.verticalFieldOfView
+    }
+  }
+  
   public final var containerFormat: Int32 {
     @inline(__always)
     get {

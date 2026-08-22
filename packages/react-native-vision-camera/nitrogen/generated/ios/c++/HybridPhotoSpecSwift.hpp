@@ -102,6 +102,12 @@ namespace margelo::nitro::camera {
     inline double getHeight() noexcept override {
       return _swiftPart.getHeight();
     }
+    inline double getHorizontalFieldOfView() noexcept override {
+      return _swiftPart.getHorizontalFieldOfView();
+    }
+    inline double getVerticalFieldOfView() noexcept override {
+      return _swiftPart.getVerticalFieldOfView();
+    }
     inline PhotoContainerFormat getContainerFormat() noexcept override {
       auto __result = _swiftPart.getContainerFormat();
       return static_cast<PhotoContainerFormat>(__result);

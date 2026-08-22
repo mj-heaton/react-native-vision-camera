@@ -56,6 +56,8 @@ namespace margelo::nitro::camera {
     bool getIsRawPhoto() override;
     double getWidth() override;
     double getHeight() override;
+    double getHorizontalFieldOfView() override;
+    double getVerticalFieldOfView() override;
     PhotoContainerFormat getContainerFormat() override;
     bool getHasPixelBuffer() override;
     std::optional<std::shared_ptr<HybridDepthSpec>> getDepth() override;

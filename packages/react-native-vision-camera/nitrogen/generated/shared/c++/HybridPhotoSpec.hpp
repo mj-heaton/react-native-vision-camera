@@ -68,6 +68,8 @@ namespace margelo::nitro::camera {
       virtual bool getIsRawPhoto() = 0;
       virtual double getWidth() = 0;
       virtual double getHeight() = 0;
+      virtual double getHorizontalFieldOfView() = 0;
+      virtual double getVerticalFieldOfView() = 0;
       virtual PhotoContainerFormat getContainerFormat() = 0;
       virtual bool getHasPixelBuffer() = 0;
       virtual std::optional<std::shared_ptr<HybridDepthSpec>> getDepth() = 0;

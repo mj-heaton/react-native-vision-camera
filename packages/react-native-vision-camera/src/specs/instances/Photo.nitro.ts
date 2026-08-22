@@ -103,6 +103,20 @@ export interface Photo
    */
   readonly height: number
   /**
+   * The horizontal field of view (in degrees) that was active for
+   * this capture, or `0` if it could not be determined.
+   *
+   * This accounts for the current zoom factor at capture time.
+   */
+  readonly horizontalFieldOfView: number
+  /**
+   * The vertical field of view (in degrees) that was active for
+   * this capture, or `0` if it could not be determined.
+   *
+   * This accounts for the current zoom factor at capture time.
+   */
+  readonly verticalFieldOfView: number
+  /**
    * Get the {@linkcode PhotoContainerFormat} of
    * this {@linkcode Photo}.
    */

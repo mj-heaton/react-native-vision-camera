@@ -17,6 +17,8 @@ public protocol HybridPhotoSpec_protocol: HybridObject {
   var isRawPhoto: Bool { get }
   var width: Double { get }
   var height: Double { get }
+  var horizontalFieldOfView: Double { get }
+  var verticalFieldOfView: Double { get }
   var containerFormat: PhotoContainerFormat { get }
   var hasPixelBuffer: Bool { get }
   var depth: (any HybridDepthSpec)? { get }

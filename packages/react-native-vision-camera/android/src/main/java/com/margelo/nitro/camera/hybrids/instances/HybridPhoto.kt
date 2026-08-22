@@ -35,6 +35,8 @@ class HybridPhoto(
   val image: ImageProxy,
   override val isMirrored: Boolean,
   val location: Location?,
+  override val horizontalFieldOfView: Double = 0.0,
+  override val verticalFieldOfView: Double = 0.0,
 ) : HybridPhotoSpec() {
   private val ioScope = CoroutineScope(Dispatchers.IO)
 

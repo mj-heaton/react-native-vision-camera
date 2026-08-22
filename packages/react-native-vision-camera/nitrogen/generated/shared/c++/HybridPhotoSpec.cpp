@@ -20,6 +20,8 @@ namespace margelo::nitro::camera {
       prototype.registerHybridGetter("isRawPhoto", &HybridPhotoSpec::getIsRawPhoto);
       prototype.registerHybridGetter("width", &HybridPhotoSpec::getWidth);
       prototype.registerHybridGetter("height", &HybridPhotoSpec::getHeight);
+      prototype.registerHybridGetter("horizontalFieldOfView", &HybridPhotoSpec::getHorizontalFieldOfView);
+      prototype.registerHybridGetter("verticalFieldOfView", &HybridPhotoSpec::getVerticalFieldOfView);
       prototype.registerHybridGetter("containerFormat", &HybridPhotoSpec::getContainerFormat);
       prototype.registerHybridGetter("hasPixelBuffer", &HybridPhotoSpec::getHasPixelBuffer);
       prototype.registerHybridGetter("depth", &HybridPhotoSpec::getDepth);

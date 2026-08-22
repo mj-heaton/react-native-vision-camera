@@ -14,15 +14,21 @@ final class HybridPhoto: HybridPhotoSpec, NativePhoto {
   let photo: AVCapturePhoto
   let metadata: MediaSampleMetadata
   let containerFormat: PhotoContainerFormat
+  let horizontalFieldOfView: Double
+  let verticalFieldOfView: Double
 
   init(
     photo: AVCapturePhoto,
     metadata: MediaSampleMetadata,
-    containerFormat: PhotoContainerFormat
+    containerFormat: PhotoContainerFormat,
+    horizontalFieldOfView: Double = 0,
+    verticalFieldOfView: Double = 0
   ) {
     self.photo = photo
     self.metadata = metadata
     self.containerFormat = containerFormat
+    self.horizontalFieldOfView = horizontalFieldOfView
+    self.verticalFieldOfView = verticalFieldOfView
     super.init()
   }
 

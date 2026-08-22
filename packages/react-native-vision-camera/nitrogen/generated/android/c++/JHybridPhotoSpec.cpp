@@ -97,6 +97,16 @@ namespace margelo::nitro::camera {
     auto __result = method(_javaPart);
     return __result;
   }
+  double JHybridPhotoSpec::getHorizontalFieldOfView() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<double()>("getHorizontalFieldOfView");
+    auto __result = method(_javaPart);
+    return __result;
+  }
+  double JHybridPhotoSpec::getVerticalFieldOfView() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<double()>("getVerticalFieldOfView");
+    auto __result = method(_javaPart);
+    return __result;
+  }
   PhotoContainerFormat JHybridPhotoSpec::getContainerFormat() {
     static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPhotoContainerFormat>()>("getContainerFormat");
     auto __result = method(_javaPart);

@@ -5,6 +5,7 @@
 ///
 
 import AVFoundation
+import CoreMedia
 import Foundation
 import NitroImage
 import NitroModules
@@ -128,6 +129,9 @@ final class HybridCameraPhotoOutput: HybridCameraPhotoOutputSpec, NativeCameraOu
     // 1. Prepare delegate that will resolve/reject Promise
     let promise = Promise<any HybridPhotoSpec>()
     let resultingFormat = PhotoContainerFormat(targetFormat: self.options.containerFormat)
+    // Snapshot the effective field of view now - the device's active format
+    // and zoom factor describe exactly what this capture will see.
+    let fieldOfView = computeFieldOfView()
     let delegate = CapturePhotoDelegate(
       onCaptured: { photo, metadata in
         // We received a Photo!
@@ -151,7 +155,9 @@ final class HybridCameraPhotoOutput: HybridCameraPhotoOutputSpec, NativeCameraOu
         let image = HybridPhoto(
           photo: photo,
           metadata: metadata,
-          containerFormat: resultingFormat)
+          containerFormat: resultingFormat,
+          horizontalFieldOfView: fieldOfView.horizontal,
+          verticalFieldOfView: fieldOfView.vertical)
         promise.resolve(withResult: image)
       },
       onError: { error in
@@ -182,6 +188,33 @@ final class HybridCameraPhotoOutput: HybridCameraPhotoOutputSpec, NativeCameraOu
         .await()
       return PhotoFile(filePath: filePath)
     }
+  }
+
+  /**
+   * Computes the effective field of view (in degrees) of the device this
+   * output is currently connected to. Ported from the v4 fork: uses the
+   * active format's `videoFieldOfView`, derives the vertical FOV from the
+   * aspect ratio, and halves ultra-wide reports (> 90°) by √2 to match the
+   * cropped photo output.
+   */
+  private func computeFieldOfView() -> (horizontal: Double, vertical: Double) {
+    guard let device = output.connection(with: .video)?.deviceInput?.device else {
+      return (0, 0)
+    }
+    let format = device.activeFormat
+    var horizontal = Double(format.videoFieldOfView)
+    let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+    let aspectRatio = dimensions.width > 0 ? Double(dimensions.height) / Double(dimensions.width) : 0.75
+    var vertical = horizontal * aspectRatio
+
+    if horizontal > 90.0 {
+      let divisor = 2.0.squareRoot()
+      horizontal /= divisor
+      vertical /= divisor
+    }
+
+    logger.info("Computed FOV: \(horizontal)° x \(vertical)°")
+    return (horizontal, vertical)
   }
 
   func prepareSettings(settings: [CapturePhotoSettings]) throws -> Promise<Void> {

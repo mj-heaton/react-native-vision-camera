@@ -55,6 +55,14 @@ abstract class HybridPhotoSpec: HybridObject() {
   
   @get:DoNotStrip
   @get:Keep
+  abstract val horizontalFieldOfView: Double
+  
+  @get:DoNotStrip
+  @get:Keep
+  abstract val verticalFieldOfView: Double
+  
+  @get:DoNotStrip
+  @get:Keep
   abstract val containerFormat: PhotoContainerFormat
   
   @get:DoNotStrip
