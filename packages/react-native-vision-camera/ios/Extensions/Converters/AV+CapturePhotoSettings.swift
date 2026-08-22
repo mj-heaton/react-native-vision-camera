@@ -135,20 +135,17 @@ extension CapturePhotoSettings {
     }
     // enableDepthData={...}
     if let enableDepthData {
-      // TODO: This is probably broken since we need to set `output.enableDepthDataDelivery` first,
-      //       at init or configuration time (configure(...)), not at each capture.
-      guard settings.supportsDepthData else {
-        throw RuntimeError.error(
-          withMessage:
-            "Depth Data is only available in processed photo formats such as JPEG or HEIC - not in RAW/DNG!"
-        )
+      // Depth is an optional extra: it can only be delivered when depth data
+      // delivery was enabled on the output at configure-time (see
+      // `PhotoOutputOptions.enableDepthDataDelivery`) and the format is a
+      // processed format. If it is unavailable we silently capture without
+      // depth rather than failing the photo - callers check `photo.depth`.
+      let canDeliverDepth = settings.supportsDepthData && output.isDepthDataDeliveryEnabled
+      if enableDepthData && !canDeliverDepth {
+        logger.info("Depth data was requested but is unavailable - capturing without depth.")
       }
-      if enableDepthData && !output.isDepthDataDeliverySupported {
-        throw RuntimeError.error(
-          withMessage: "`enableDepthData` is not supported on this PhotoOutput!")
-      }
-      settings.isDepthDataDeliveryEnabled = enableDepthData
-      settings.embedsDepthDataInPhoto = enableDepthData
+      settings.isDepthDataDeliveryEnabled = enableDepthData && canDeliverDepth
+      settings.embedsDepthDataInPhoto = enableDepthData && canDeliverDepth
     }
     // enableCameraCalibrationDataDelivery={...}
     if let enableCameraCalibrationDataDelivery {

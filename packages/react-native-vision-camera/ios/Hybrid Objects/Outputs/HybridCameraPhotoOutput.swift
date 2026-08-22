@@ -83,6 +83,23 @@ final class HybridCameraPhotoOutput: HybridCameraPhotoOutputSpec, NativeCameraOu
     try? connection.setOrientation(outputOrientation)
     try? connection.setMirrorMode(config.mirrorMode)
 
+    // Enable depth data delivery if requested - but only when the format that
+    // was already negotiated for photo quality supports it. Depth must never
+    // influence format selection; it is an optional extra we harvest for free.
+    if options.enableDepthDataDelivery == true {
+      if let device = connection.deviceInput?.device,
+        !device.activeFormat.supportedDepthDataFormats.isEmpty,
+        output.isDepthDataDeliverySupported
+      {
+        if !output.isDepthDataDeliveryEnabled {
+          output.isDepthDataDeliveryEnabled = true
+          logger.info("Depth data delivery enabled on the Photo Output.")
+        }
+      } else {
+        logger.info("Depth data delivery requested, but the active format does not support depth - skipping.")
+      }
+    }
+
     if #available(iOS 16.0, *) {
       // Configure PhotoOutput to the currently selected Format's max photo size
       if let nativeDevice = connection.deviceInput {

@@ -18,8 +18,14 @@ public extension PhotoOutputOptions {
   /**
    * Create a new instance of `PhotoOutputOptions`.
    */
-  init(targetResolution: Size, containerFormat: TargetPhotoContainerFormat, quality: Double, qualityPrioritization: QualityPrioritization, previewImageTargetSize: Size?) {
-    self.init(targetResolution, containerFormat, quality, qualityPrioritization, { () -> bridge.std__optional_Size_ in
+  init(targetResolution: Size, containerFormat: TargetPhotoContainerFormat, quality: Double, qualityPrioritization: QualityPrioritization, enableDepthDataDelivery: Bool?, previewImageTargetSize: Size?) {
+    self.init(targetResolution, containerFormat, quality, qualityPrioritization, { () -> bridge.std__optional_bool_ in
+      if let __unwrappedValue = enableDepthDataDelivery {
+        return bridge.create_std__optional_bool_(__unwrappedValue)
+      } else {
+        return .init()
+      }
+    }(), { () -> bridge.std__optional_Size_ in
       if let __unwrappedValue = previewImageTargetSize {
         return bridge.create_std__optional_Size_(__unwrappedValue)
       } else {
@@ -46,6 +52,18 @@ public extension PhotoOutputOptions {
   @inline(__always)
   var qualityPrioritization: QualityPrioritization {
     return self.__qualityPrioritization
+  }
+  
+  @inline(__always)
+  var enableDepthDataDelivery: Bool? {
+    return { () -> Bool? in
+      if bridge.has_value_std__optional_bool_(self.__enableDepthDataDelivery) {
+        let __unwrapped = bridge.get_std__optional_bool_(self.__enableDepthDataDelivery)
+        return __unwrapped
+      } else {
+        return nil
+      }
+    }()
   }
   
   @inline(__always)

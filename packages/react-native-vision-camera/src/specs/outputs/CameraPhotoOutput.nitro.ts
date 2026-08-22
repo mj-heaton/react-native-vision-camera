@@ -67,6 +67,20 @@ export interface PhotoOutputOptions {
    */
   qualityPrioritization: QualityPrioritization
   /**
+   * Enables depth data delivery on this Photo Output if the
+   * session's negotiated device and format already support it.
+   *
+   * This never influences format negotiation - if the format
+   * chosen for photo quality does not support depth, no depth
+   * is delivered. Check {@linkcode CameraPhotoOutput.supportsDepthDataDelivery}
+   * and pass {@linkcode CapturePhotoSettings.enableDepthData} to
+   * actually receive a {@linkcode Photo.depth}.
+   *
+   * @platform iOS
+   * @default false
+   */
+  enableDepthDataDelivery?: boolean
+  /**
    * When this is set to a specific {@linkcode Size},
    * a ready to display {@linkcode Image} will be delivered
    * just before the resulting {@linkcode Photo} is available.
